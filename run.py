@@ -14,7 +14,7 @@ if __name__ == '__main__':
     # basic config
     parser.add_argument('--is_training', type=int, default=1, help='status')
     parser.add_argument('--model_id', type=str, default='test', help='model id')
-    parser.add_argument('--model', type=str, default='TSMixer',
+    parser.add_argument('--model', type=str, default='PatchMixer',
                         help='model name, options: [Autoformer, Informer, Transformer]')
 
     # data loader
@@ -130,8 +130,8 @@ if __name__ == '__main__':
             exp.test(setting)
 
             if args.do_predict:
-                print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-                exp.predict(setting, True)
+              print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+              exp.predict(setting, True)
 
             torch.cuda.empty_cache()
     else:
