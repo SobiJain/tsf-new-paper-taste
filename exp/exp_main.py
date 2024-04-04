@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 from torch import optim
 from torch.optim import lr_scheduler 
+from calflops import calculate_flops
 
 import os
 import time
@@ -82,17 +83,17 @@ class Exp_Main(Exp_Basic):
                             outputs = self.model(batch_x, batch_x_mark)
                         else:
                             if self.args.output_attention:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+                                outputs = self.model(batch_x)[0]
                             else:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                                outputs = self.model(batch_x)
                 else:
                     if 'Linear' in self.args.model or 'TST' in self.args.model:
                         outputs = self.model(batch_x)
                     else:
                         if self.args.output_attention:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+                            outputs = self.model(batch_x)[0]
                         else:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                            outputs = self.model(batch_x)
                 f_dim = -1 if self.args.features == 'MS' else 0
                 outputs = outputs[:, -self.args.pred_len:, f_dim:]
                 batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
@@ -159,9 +160,9 @@ class Exp_Main(Exp_Basic):
                             outputs = self.model(batch_x)
                         else:
                             if self.args.output_attention:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+                                outputs = self.model(batch_x)[0]
                             else:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                                outputs = self.model(batch_x)
 
                         f_dim = -1 if self.args.features == 'MS' else 0
                         outputs = outputs[:, -self.args.pred_len:, f_dim:]
@@ -173,10 +174,10 @@ class Exp_Main(Exp_Basic):
                             outputs = self.model(batch_x)
                     else:
                         if self.args.output_attention:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+                            outputs = self.model(batch_x)[0]
                             
                         else:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                            outputs = self.model(batch_x)
                     # print(outputs.shape,batch_y.shape)
                     f_dim = -1 if self.args.features == 'MS' else 0
                     outputs = outputs[:, -self.args.pred_len:, f_dim:]
@@ -241,6 +242,7 @@ class Exp_Main(Exp_Basic):
             os.makedirs(folder_path)
 
         self.model.eval()
+        f = 1
         with torch.no_grad():
             for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
                 batch_x = batch_x.float().to(self.device)
@@ -259,18 +261,27 @@ class Exp_Main(Exp_Basic):
                             outputs = self.model(batch_x)
                         else:
                             if self.args.output_attention:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+                                outputs = self.model(batch_x)[0]
                             else:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                                outputs = self.model(batch_x)
                 else:
                     if 'Linear' in self.args.model or 'TST' in self.args.model:
                             outputs = self.model(batch_x)
                     else:
                         if self.args.output_attention:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+                            outputs = self.model(batch_x)[0]
 
                         else:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                            outputs = self.model(batch_x)
+
+                if f:
+                  input_shape = (256, 336, 7)
+                  flops, macs, params = calculate_flops(model=PatchMixer.Model(self.args), 
+                                                        input_shape=input_shape,
+                                                        output_as_string=True,
+                                                        output_precision=4)
+                  print("Alexnet FLOPs:%s   MACs:%s   Params:%s \n" %(flops, macs, params))
+                  f= 0
 
                 f_dim = -1 if self.args.features == 'MS' else 0
                 # print(outputs.shape,batch_y.shape)
