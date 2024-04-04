@@ -71,7 +71,7 @@ class Mlp(nn.Module):
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
         self.fc1 = nn.Linear(in_features, hidden_features)
-        self.act = nn.GELU()
+        self.act = nn.ReLU()
         self.fc2 = nn.Linear(hidden_features, out_features)
         self.drop = nn.Dropout(drop)
 
@@ -111,7 +111,7 @@ class Backbone(nn.Module):
 
         # 3.1
         self.depth_conv = nn.Conv1d(patch_num, patch_num, kernel_size=patch_len, stride=patch_len, groups=patch_num)
-        self.depth_activation = nn.GELU()
+        self.depth_activation = nn.ReLU()
         self.depth_norm = nn.BatchNorm1d(patch_num)
         self.depth_res = nn.Linear(d_model, patch_len)
         # 3.2
@@ -119,7 +119,7 @@ class Backbone(nn.Module):
         # self.point_activation = nn.GELU()
         # self.point_norm = nn.BatchNorm1d(patch_len)
         self.point_conv = nn.Conv1d(patch_num, patch_num, kernel_size=1, stride=1)
-        self.point_activation = nn.GELU()
+        self.point_activation = nn.ReLU()
         self.point_norm = nn.BatchNorm1d(patch_num)
         # 4
         self.mlp = Mlp(patch_len * patch_num, pred_len * 2, pred_len)
@@ -147,13 +147,13 @@ class Backbone(nn.Module):
         # 3.1
         res = self.depth_res(z) # B * D, L, d -> B * D, L, P
         z_depth = self.depth_conv(z) # B * D, L, d -> B * D, L, P
-        z_depth = self.depth_activation(z_depth)
         z_depth = self.depth_norm(z_depth)
+        z_depth = self.depth_activation(z_depth)
         z_depth = z_depth + res
         # 3.2
         z_point = self.point_conv(z_depth) # B * D, L, P -> B * D, L, P
-        z_point = self.point_activation(z_point)
         z_point = self.point_norm(z_point)
+        z_point = self.point_activation(z_point)
         z_point = z_point.reshape(B, D, -1) # B * D, L, P -> B, D, L * P
 
         # 4
@@ -173,7 +173,7 @@ class Model(nn.Module):
         self.pred_len = configs.pred_len
 
 
-    def forward(self, x, batch_x_mark, dec_inp, batch_y_mark):
+    def forward(self, x):
         z = self.rev(x, 'norm') # B, L, D -> B, L, D
         z = self.backbone(z) # B, L, D -> B, H, D
         z = self.rev(z, 'denorm') # B, L, D -> B, H, D
